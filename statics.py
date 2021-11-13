@@ -8,7 +8,7 @@ Version: 0.1.0 (WORK IN PROGRESS)
 
 import math
 
-# import numpy as np
+import numpy as np
 
 cartesian_vectors = []
 positions = {}
@@ -19,11 +19,11 @@ def display_menu():
     print("AV)Add Vector                AP)Add Position")
     print("PV)Print Vectors             PP)Print Position")
     print("CV)Calculate Result Vector   CP)Calculate Position    CU)Calculate Unit Vector ")
-    print("MF)Multiply U.V by Force     PEQ)Print Equil Statements")
-    print("R)Reset Data                  RP)Remove Position      Q)Quit")
+    print("MF)Multiply U.V by Force     PEQ)Print Equil Statements RxF)Cross Product")
+    print("R)Reset Data                 RP)Remove Position        Q)Quit")
 
 
-def calcMagnitudes() -> tuple[float, int, int, int]:
+def calcMagnitudes() -> tuple[float, float, float, float]:
     i_total = 0
     j_total = 0
     k_total = 0
@@ -36,8 +36,7 @@ def calcMagnitudes() -> tuple[float, int, int, int]:
     return magnitude, i_total, j_total, k_total
 
 
-def calcDirectionalCosines() -> tuple[float, float, float]:
-    magnitudes = calcMagnitudes()
+def calcDirectionalCosines(magnitudes: tuple[float, float, float, float]) -> tuple[float, float, float]:
     x_angle = math.acos(magnitudes[1] / magnitudes[0]) * 180 / math.pi
     y_angle = math.acos(magnitudes[2] / magnitudes[0]) * 180 / math.pi
     z_angle = math.acos(magnitudes[3] / magnitudes[0]) * 180 / math.pi
@@ -58,19 +57,24 @@ def calcDistanceVector(position: str) -> dict[str, dict[str, float]]:
 def calcUnitVector(position: str) -> dict[str, dict[str, float]]:
     distance_vector = calcDistanceVector(position)["r" + position]
 
-    x = distance_vector['i']
-    y = distance_vector['j']
-    z = distance_vector['k']
+    i = distance_vector['i']
+    j = distance_vector['j']
+    k = distance_vector['k']
 
-    magnitude = math.sqrt(x ** 2 + y ** 2 + z ** 2)
-    i = x / magnitude
-    j = y / magnitude
-    k = z / magnitude
+    magnitude = math.sqrt(i ** 2 + j ** 2 + k ** 2)
+    i /= magnitude
+    j /= magnitude
+    k /= magnitude
 
     name = str("u" + position)
     calculated_unit_vector = {name: {"i": i, "j": j, "k": k}}
 
     return calculated_unit_vector
+
+
+def crossProduct(R: list[float, float, float], F: list[float, float, float]) -> tuple[float, float, float]:
+    data = np.cross(R, F)
+    return data[0], data[1], data[2]
 
 
 def roundToSigFigs(number: float, sigfigs: int) -> float:
@@ -87,7 +91,7 @@ def user_interface():
         display_menu()
         choice = input("Please enter your choice: ").upper()
 
-        VALID_INPUTS = dict.fromkeys(['AV', 'AP', 'PV', 'PP', 'PEQ', 'CV', 'CP', 'CU', 'MF', 'R', 'RP', 'Q'])
+        VALID_INPUTS = dict.fromkeys(['AV', 'AP', 'PV', 'PP', 'PEQ', 'CV', 'CP', 'CU', 'RXF', 'MF', 'R', 'RP', 'Q'])
         if choice in VALID_INPUTS:
             valid_command = True
         else:
@@ -121,6 +125,7 @@ def user_interface():
                         i_component = roundToSigFigs(float(current_position['i']), 4)
                         j_component = roundToSigFigs(float(current_position['j']), 4)
                         k_component = roundToSigFigs(float(current_position['k']), 4)
+
                         print("%s    %si    %sj    %sk" % (i, i_component, j_component, k_component))
 
                 else:
@@ -143,9 +148,9 @@ def user_interface():
                     i_component = roundToSigFigs(float(current_position['i']), 4)
                     j_component = roundToSigFigs(float(current_position['j']), 4)
                     k_component = roundToSigFigs(float(current_position['k']), 4)
-                    EquiI += str(i) + "(" + str(i_component) + ")    "
-                    EquiJ += str(i) + "(" + str(j_component) + ")    "
-                    EquiK += str(i) + "(" + str(k_component) + ")    "
+                    EquiI += ("F" + str(i)) + "(" + str(i_component) + ")    "
+                    EquiJ += ("F" + str(i)) + "(" + str(j_component) + ")    "
+                    EquiK += ("F" + str(i)) + "(" + str(k_component) + ")    "
                 print(EquiI + "\n")
                 print(EquiJ + "\n")
                 print(EquiK + "\n")
@@ -159,7 +164,7 @@ def user_interface():
                     j_component = roundToSigFigs(magnitudes[2], 4)
                     k_component = roundToSigFigs(magnitudes[3], 4)
                     print("Fr is %si    %sj    %sk        |Fr| = %s" % (i_component, j_component, k_component, resMagn))
-                    directional_cosines = calcDirectionalCosines()
+                    directional_cosines = calcDirectionalCosines(magnitudes)
                     x_rnd = roundToSigFigs(directional_cosines[0], 4)
                     y_rnd = roundToSigFigs(directional_cosines[1], 4)
                     z_rnd = roundToSigFigs(directional_cosines[2], 4)
@@ -199,6 +204,22 @@ def user_interface():
                     else:
                         break  # Exits for loop
                 input("Hit any key to continue...")  # Holds the next line until user hits enter
+            elif choice == 'RXF':
+                # String = " ".join(str(input("R: ")).split()).split(" ") # no space entries :shrug: fuck me LUL
+
+                Rstring = " ".join(str(input("R: ")).split()).split(" ")
+                Fstring = " ".join(str(input("F: ")).split()).split(" ")
+
+                if len(Rstring) >= 3 and len(Fstring) >= 3:
+
+                    R_vector = [float(Rstring[0]), float(Rstring[1]), float(Rstring[2])]
+                    F_vector = [float(Fstring[0]), float(Fstring[1]), float(Fstring[2])]
+
+                    cp = crossProduct(R_vector, F_vector)
+                    print("M is %si    %sj    %sk " % (cp[0], cp[1], cp[2]))
+                else:
+                    print("Try again with enough values")
+
             elif choice == 'MF':
                 calculate_unit_vectors_amount = input("How many unit vectors do you want to MULTIPLY? ")
                 question = input("Do you want to save these force vectors? (YES/NO) ")[:3].upper()
